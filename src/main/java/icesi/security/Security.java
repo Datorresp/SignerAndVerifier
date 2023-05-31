@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.io.BufferedInputStream;
 
 public class Security {
 
@@ -32,6 +34,8 @@ public class Security {
     private static final String SECRET_KEY_ALGORITHM = "AES";
 
     private static final String AUTH_KEY_ALGORITHM = "PBKDF2WithHmacSHA256";
+    
+    private static final String SIGNATURE = "SHA1withRSA";
 
 
     public SecretKey getKeyFromPassword(char[] password) throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -40,6 +44,7 @@ public class Security {
         SecretKey secret = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), SECRET_KEY_ALGORITHM);
         return secret;
     }
+    
     public void keyGenerator(char[] pass) throws Exception {
         KeyPairGenerator keyPairGenerator = null;
 
@@ -126,4 +131,72 @@ public class Security {
         fis.close();
         fos.close();
     }
+    
+//---------------------------------------------------------------------------------------------
+    
+    public PrivateKey convertKeyToPrivate(byte[] input) throws Exception {
+
+		KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
+		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(input);
+		return keyFactory.generatePrivate(keySpec);
+	}
+    
+    public void signFile(String fileToSign, PrivateKey privK)
+			throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException {
+
+		Signature signatu = Signature.getInstance(SIGNATURE);
+		signatu.initSign(privK);
+		FileInputStream fis = new FileInputStream(fileToSign);
+		BufferedInputStream bis = new BufferedInputStream(fis);
+		byte[] buffer = new byte[1024];
+		int len;
+		while ((len = bis.read(buffer)) >= 0) {
+			signatu.update(buffer, 0, len);
+		}
+		;
+		bis.close();
+		byte[] realSig = signatu.sign();
+		FileOutputStream fos = new FileOutputStream(fileToSign + ".sig");
+		fos.write(realSig);
+		fos.close();
+	}
+    
+    public byte[] passwordCheck(SecretKey key, File inputFile)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+
+		Cipher cipher = Cipher.getInstance(ALGORITHM);
+		byte[] output = null;
+
+		try (FileInputStream fis = new FileInputStream(inputFile)) {
+			byte[] hash = new byte[20];
+			fis.read(hash);
+			byte[] ivB = new byte[16];
+			fis.read(ivB);
+
+			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(ivB));
+
+			output = cipher.doFinal(fis.readAllBytes());
+			byte[] expectedHash = hashExpected(output);
+
+			for (int i = 0; i < expectedHash.length; i++) {
+				if (hash[i] != expectedHash[i]) {
+					return null;
+				}
+			}
+			return output;
+
+		} catch (IOException | InvalidKeyException | InvalidAlgorithmParameterException | BadPaddingException e) {
+			e.printStackTrace();
+			System.out.println("Contraseña incorrecta");
+			return null;
+		}
+	}
+    
+    public byte[] hashExpected(byte[] input) throws IOException, NoSuchAlgorithmException {
+		MessageDigest digest = MessageDigest.getInstance(MSG_DIGEST);
+		digest.update(input);
+		return digest.digest();
+	}
+    
+    
 }
