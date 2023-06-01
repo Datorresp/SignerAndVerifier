@@ -203,9 +203,9 @@ public class Security {
 	}
     
     //3r Punto
-    public boolean verifyFileSigned(String fileToCheck, String fileSig, File pbk) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, IOException {
+    public boolean verifySign(String fileToCheck, String fileSig, File publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, IOException {
 
-        PublicKey pk = convertToPbKey(pbk);
+        PublicKey pk = convertToPublicKey(publicKey);
         Signature signatu = Signature.getInstance(SIGNATURE);
         signatu.initVerify(pk);
         FileInputStream fis = new FileInputStream(fileSig);
@@ -224,7 +224,7 @@ public class Security {
         return signatu.verify(sigFile);
     }
 
-    private PublicKey convertToPbKey(File file) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private PublicKey convertToPublicKey(File file) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] output = null;
         try (FileInputStream fis = new FileInputStream(file)) {
             output = fis.readAllBytes();
