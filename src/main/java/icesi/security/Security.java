@@ -39,6 +39,7 @@ public class Security {
     private static final String SIGNATURE = "SHA1withRSA";
 
 
+    //1er Punto
 
     public SecretKey getKeyFromPassword(char[] password) throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory factory = SecretKeyFactory.getInstance(AUTH_KEY_ALGORITHM);
@@ -135,7 +136,8 @@ public class Security {
     }
     
 //---------------------------------------------------------------------------------------------
-    
+
+    //2do Punto
     public PrivateKey convertKeyToPrivate(byte[] input) throws Exception {
 
 		KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
@@ -200,7 +202,7 @@ public class Security {
 		return digest.digest();
 	}
     
-    //Punto 3
+    //3r Punto
     public boolean verifyFileSigned(String fileToCheck, String fileSig, File pbk) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, IOException {
 
         PublicKey pk = convertToPbKey(pbk);
