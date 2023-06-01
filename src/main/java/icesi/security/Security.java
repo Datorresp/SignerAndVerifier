@@ -14,6 +14,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.io.BufferedInputStream;
+import java.security.spec.X509EncodedKeySpec;
 
 public class Security {
 
@@ -36,6 +37,7 @@ public class Security {
     private static final String AUTH_KEY_ALGORITHM = "PBKDF2WithHmacSHA256";
     
     private static final String SIGNATURE = "SHA1withRSA";
+
 
 
     public SecretKey getKeyFromPassword(char[] password) throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -198,5 +200,37 @@ public class Security {
 		return digest.digest();
 	}
     
-    
+    //Punto 3
+    public boolean verifyFileSigned(String fileToCheck, String fileSig, File pbk) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, IOException {
+
+        PublicKey pk = convertToPbKey(pbk);
+        Signature signatu = Signature.getInstance(SIGNATURE);
+        signatu.initVerify(pk);
+        FileInputStream fis = new FileInputStream(fileSig);
+        byte[] sigFile = new byte[fis.available()];
+        fis.read(sigFile);
+        fis.close();
+        FileInputStream fisTwo = new FileInputStream(fileToCheck);
+        BufferedInputStream bis = new BufferedInputStream(fisTwo);
+        byte[] buffer = new byte[1024];
+        int len;
+        while (bis.available() != 0) {
+            len = bis.read(buffer);
+            signatu.update(buffer, 0, len);
+        }
+        bis.close();
+        return signatu.verify(sigFile);
+    }
+
+    private PublicKey convertToPbKey(File file) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] output = null;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            output = fis.readAllBytes();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(output);
+        return keyFactory.generatePublic(keySpec);
+    }
 }
